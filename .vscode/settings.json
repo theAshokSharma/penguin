@@ -1,0 +1,9 @@
+{
+    "python.linting.flake8Enabled": true,
+    "python.linting.enabled": true,
+    "editor.rulers": [72, 110],
+    "python.linting.flake8Args": ["--ignore=E24,W504,E128,E121", "--verbose", "--max-line-length=110"],       
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.terminal.activateEnvironment": true,
+    "python.defaultInterpreterPath": ".venv/bin/python",
+}
