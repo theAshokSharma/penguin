@@ -2,7 +2,7 @@
 import json
 from fhirclient import client
 import fhirclient.models.patient as p
-import fhirclient.models.procedure as pr
+import fhirclient.models.immunization as im
 
 settings = {
     'app_id': 'my_web_app',
@@ -19,17 +19,11 @@ def print_resource(resource, indent=None, length=100):
 smart = client.FHIRClient(settings=settings)
 
 
-patient = p.Patient.read("2687129", smart.server)
+patient = p.Patient.read("53373", smart.server)
 print(patient.birthDate.isostring)
 print(smart.human_name(patient.name[0]))
 
-search = pr.Procedure.where(struct={'subject': '2687129', 'status': 'completed'})
-procedures = search.perform_resources(smart.server)
-for procedure in procedures:
-    print_resource(procedure)
-
-search = search.include('subject')
-procedures = search.perform_resources(smart.server)
-for resource in procedures:
-    print(resource.__class__.__name__)
-    print_resource(resource)
+search = im.Immunization.where(struct={'patient': '53373'})
+immunizations = search.perform_resources(smart.server)
+for imm in immunizations:
+    print_resource(imm)
