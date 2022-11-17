@@ -1,0 +1,182 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "resourceType": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "total": {
+      "type": "integer"
+    },
+    "entry": {
+      "type": "array",
+      "items": [
+        {
+          "type": "object",
+          "properties": {
+            "resource": {
+              "type": "object",
+              "properties": {
+                "resourceType": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "contained": {
+                  "type": "array",
+                  "items": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "resourceType": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "resourceType",
+                        "id",
+                        "name"
+                      ]
+                    }
+                  ]
+                },
+                "status": {
+                  "type": "string"
+                },
+                "connectionType": {
+                  "type": "object",
+                  "properties": {
+                    "system": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "system",
+                    "code"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "managingOrganization": {
+                  "type": "object",
+                  "properties": {
+                    "reference": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "reference"
+                  ]
+                },
+                "period": {
+                  "type": "object",
+                  "properties": {
+                    "start": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "start"
+                  ]
+                },
+                "payloadType": {
+                  "type": "array",
+                  "items": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "coding": {
+                          "type": "array",
+                          "items": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "system": {
+                                  "type": "string"
+                                },
+                                "code": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "system",
+                                "code"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "coding"
+                      ]
+                    }
+                  ]
+                },
+                "payloadMimeType": {
+                  "type": "array",
+                  "items": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "address": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "resourceType",
+                "id",
+                "contained",
+                "status",
+                "connectionType",
+                "name",
+                "managingOrganization",
+                "period",
+                "payloadType",
+                "payloadMimeType",
+                "address"
+              ]
+            }
+          },
+          "required": [
+            "resource"
+          ]
+        }
+      ]
+    }
+  },
+  "required": [
+    "resourceType",
+    "type",
+    "timestamp",
+    "total",
+    "entry"
+  ]
+}
