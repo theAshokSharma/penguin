@@ -52,8 +52,7 @@ def _reset():
 
 def _get_prescriptions(smart):
     bundle = MedicationRequest.where({'patient': smart.patient_id}).perform(smart.server)
-    pres = [be.resource for be in bundle.entry] if bundle is not None and\
-        bundle.entry is not None and bundle.entry.resource_type != 'OperationOutcome' else None
+    pres = [be.resource for be in bundle.entry] if bundle is not None and bundle.entry is not None else None
     if pres is not None and len(pres) > 0:
         return pres
     return None
