@@ -133,3 +133,4 @@ dmypy.json
 
 *.xlsx
 data/*.*
+session_data/*
