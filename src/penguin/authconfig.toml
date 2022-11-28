@@ -1,0 +1,6 @@
+[epic.dev]
+AUTH_TOKEN = "https://fhir.epic.com/interconnect-fhir-oauth/oauth2/token"
+CLIENT_ID = "2c0f6a9d-fb80-4bd8-8f39-aa7fa4ea0692"
+CLIENT_SECRET = ""
+STATE = "1234"
+REDIRECT_URL = "http://localhost:3000"
