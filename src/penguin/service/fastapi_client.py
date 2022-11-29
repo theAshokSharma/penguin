@@ -52,7 +52,9 @@ def _reset():
 
 def _get_prescriptions(smart):
     bundle = MedicationRequest.where({'patient': smart.patient_id}).perform(smart.server)
-    pres = [be.resource for be in bundle.entry] if bundle is not None and bundle.entry is not None else None
+    pres = [be.resource for be in bundle.entry] if bundle is not None and \
+        bundle.entry is not None else None
+
     if pres is not None and len(pres) > 0:
         return pres
     return None
@@ -69,7 +71,7 @@ def _med_name(med):
                      if coding.system == 'http://www.nlm.nih.gov/research/umls/rxnorm'), None)
         if name:
             return name
-    if med.text and med.text:
+    if med.text:
         return med.text
     return "Unnamed Medication(TM)"
 
@@ -85,19 +87,19 @@ def _get_med_name(prescription, client=None):
         else:
             return 'Error: medication not found'
     else:
-        return "unmanaged resource type: {0}".format(prescription.resource_type)
+        return ""  # "unmanaged resource type: {0}".format(prescription.resource_type)
 
 
 def _get_contact(contactinfo: ContactPoint):
     if contactinfo is not None:
         if contactinfo.system == 'phone':
-            return "{0} - {1}({2})".format(contactinfo.system if contactinfo.system is not None else "unknown",
+            return "{0} - {1} ({2})".format(contactinfo.system if contactinfo.system is not None else "unknown",
                                            contactinfo.value if contactinfo.value is not None else "unknown",
                                            contactinfo.use if contactinfo.use is not None else "unknown")
         else:
             return "{0} - {1}".format(contactinfo.system if contactinfo.system is not None else "unknown",
                                 contactinfo.value if contactinfo.value is not None else "unknown")
-    return "unknown - unknown"
+    return ""
 
 
 app = FastAPI()
@@ -127,7 +129,8 @@ def root(request: Request):
 
         pres = _get_prescriptions(smart)
         if pres is not None:
-            body += "<p>{0} prescriptions: <ul><li>{1}</li></ul></p>".format("His" if 'male' == smart.patient.gender else "Her", '</li><li>'.join([_get_med_name(p, smart) for p in pres]))
+            body += "<p>{0} prescriptions: <ul><li>{1}</li></ul></p>".format(
+                "His" if 'male' == smart.patient.gender else "Her", '</li><li>'.join([_get_med_name(p, smart) for p in pres]))
         else:
             body += "<p>(There are no prescriptions for {0})</p>".\
                 format("him" if 'male' == smart.patient.gender else "her")
@@ -157,21 +160,29 @@ def callback(request: Request, response_class=RedirectResponse):
         name = smart.human_name(smart.patient.name[0]
                 if smart.patient.name and len(smart.patient.name) > 0 else 'Unknown')
         dob = smart.patient.birthDate.isostring if smart.patient.birthDate is not None else None
+        gp = smart.patient.generalPractitioner[0].display if smart.patient.generalPractitioner is not None else None
         patientID = smart.patient_id
+        maritalstatus = smart.patient.maritalStatus.text if smart.patient.maritalStatus is not None else None
 
         # generate simple body text
         body += "<p>You are authorized and ready to make API requests for <em>{0}</em>.</p>".format(name)
-        body += "<p>Birth Date: {0}</p>".format(dob)
         body += "<p>ID: {0}</p>".format(patientID)
+        body += "<p>Birth Date: {0}</p>".format(dob)
+        body += "<p>Marital Status: {0}</p>".format(maritalstatus)
+        body += "<p>General Practioner: {0}</p>".format(gp)
 
         # get all contact number
-        body += "<p>Contact Information(s): <ul><li>{0}</li></ul></p>".format('</li><li>'.join([_get_contact(cntc) for cntc in smart.patient.telecom]))
+        body += "<p>Contact Information(s): <ul><li>{0}</li></ul></p>".format('</li><li>'.
+            join([_get_contact(cntc) for cntc in smart.patient.telecom]))
 
         pres = _get_prescriptions(smart)
         if pres is not None:
-            body += "<p>{0} prescriptions: <ul><li>{1}</li></ul></p>".format("His" if 'male' == smart.patient.gender else "Her", '</li><li>'.join([_get_med_name(p, smart) for p in pres]))
+            body += "<p>{0} prescriptions: <ul><li>{1}</li></ul></p>".format(
+                "His" if 'male' == smart.patient.gender else "Her", '</li><li>'.
+                join([_get_med_name(p, smart) for p in pres]))
         else:
-            body += "<p>(There are no prescriptions for {0})</p>".format("him" if 'male' == smart.patient.gender else "her")
+            body += "<p>(There are no prescriptions for {0})</p>".format(
+                "him" if 'male' == smart.patient.gender else "her")
         body += """<p><a href="/logout">Change patient</a></p>"""
 
     return HTMLResponse(body)
