@@ -1,7 +1,7 @@
 import os
 
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 import uvicorn
 
 # from starlette.requests import Request
@@ -201,9 +201,24 @@ def callback(request: Request, response_class=RedirectResponse):
         else:
             body += "<p>(There are no prescriptions for {0})</p>".format(
                 "him" if 'male' == smart.patient.gender else "her")
+
         body += """<p><a href="/logout">Change patient</a></p>"""
 
     return HTMLResponse(body)
+
+
+@app.get("/logout", response_class=HTMLResponse)
+def login_get():
+    _logout()
+    response = RedirectResponse(url="/")
+    return response
+
+
+@app.get('/reset', response_class=HTMLResponse)
+def reset():
+    _reset()
+    response = RedirectResponse(url="/")
+    return response
 
 
 if __name__ == '__main__':
