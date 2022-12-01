@@ -13,6 +13,7 @@ from fhirclient import client
 from fhirclient.models.medication import Medication
 from fhirclient.models.medicationrequest import MedicationRequest
 from fhirclient.models.contactpoint import ContactPoint
+from fhirclient.models.address import Address
 
 REQ: Request = None
 
@@ -102,6 +103,17 @@ def _get_contact(contactinfo: ContactPoint):
     return ""
 
 
+def _get_address(addr: Address):
+    if addr is not None:
+        return "{0}<br>{1}<br>{2}<br>{3} - {4}<br>{5}".format(addr.use,
+                                                               "<br>".join(addr.line),
+                                                               addr.city,
+                                                               addr.state,
+                                                               addr.postalCode,
+                                                               addr.country)
+    return ""
+
+
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="KeepThisSecret")
 
@@ -163,17 +175,23 @@ def callback(request: Request, response_class=RedirectResponse):
         gp = smart.patient.generalPractitioner[0].display if smart.patient.generalPractitioner is not None else None
         patientID = smart.patient_id
         maritalstatus = smart.patient.maritalStatus.text if smart.patient.maritalStatus is not None else None
+        lang = smart.patient.communication[0].language.coding[0].display
 
         # generate simple body text
-        body += "<p>You are authorized and ready to make API requests for <em>{0}</em>.</p>".format(name)
-        body += "<p>ID: {0}</p>".format(patientID)
-        body += "<p>Birth Date: {0}</p>".format(dob)
-        body += "<p>Marital Status: {0}</p>".format(maritalstatus)
-        body += "<p>General Practioner: {0}</p>".format(gp)
+        body += "<p>Patient <em>{0}</em>.</p>".format(name)
+        body += "<p>ID: <strong>{0}</strong></p>".format(patientID)
+        body += "<p>Birth Date: <strong>{0}</strong></p>".format(dob)
+        body += "<p>Marital Status: <strong>{0}</strong></p>".format(maritalstatus)
+        body += "<p>Language: <strong>{0}</strong></p>".format(lang)
+        body += "<p>General Practioner: <strong>{0}</strong></p>".format(gp)
 
         # get all contact number
-        body += "<p>Contact Information(s): <ul><li>{0}</li></ul></p>".format('</li><li>'.
+        body += "<p>ontact Information(s): <ul><li><strong>{0}</strong></li></ul></p>".format('</li><li>'.
             join([_get_contact(cntc) for cntc in smart.patient.telecom]))
+
+        # get all home address on the record
+        body += "<p>Address: <ul><li><strong>{0}</strong></li></ul></p>".format('</li><li>'.
+            join([_get_address(addr) for addr in smart.patient.address]))
 
         pres = _get_prescriptions(smart)
         if pres is not None:
