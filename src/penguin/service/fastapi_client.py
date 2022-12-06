@@ -14,6 +14,9 @@ from fhirclient.models.medication import Medication
 from fhirclient.models.medicationrequest import MedicationRequest
 from fhirclient.models.contactpoint import ContactPoint
 from fhirclient.models.address import Address
+from fhirclient.models.immunization import Immunization
+from fhirclient.models.observation import Observation
+from fhirclient.models.list import List
 
 REQ: Request = None
 
@@ -61,6 +64,48 @@ def _get_prescriptions(smart):
     return None
 
 
+def _get_immunization(smart):
+    bundle = Immunization.where({'patient': smart.patient_id}).perform(smart.server)
+    imnzs = [be.resource for be in bundle.entry] if bundle is not None and \
+        bundle.entry is not None else None
+
+    imnz = [im for im in imnzs if im.resource_type != 'OperationOutcome']
+
+    return imnz
+
+
+def _get_immunication_details(imnz_J):
+    return "{0} {1} {2} {3} Manufacturer: {4} Lot# {5} Status: {6}".format(
+        imnz_J['occurrenceDateTime'],
+        imnz_J['vaccineCode']['text'],
+        imnz_J['doseQuantity']['value'],
+        imnz_J['doseQuantity']['unit'],
+        imnz_J['manufacturer']['display'],
+        imnz_J['lotNumber'],
+        imnz_J['status'])
+
+
+def _get_observation(smart):
+    bundle = Observation.where(struct={'subject': smart.patient_id, 'category': 'vital-signs'}).perform(smart.server)
+    obs = [be.resource for be in bundle.entry] if bundle is not None and \
+        bundle.entry is not None else None
+
+    obs_ = [ob for ob in obs if ob.resource_type != 'OperationOutcome']
+
+    return obs_
+
+
+def _get_observation_details(obs):
+    return "{0} {1} {2} {3} Manufacturer: {4} Lot# {5} Status: {6}".format(
+        obs['occurrenceDateTime'],
+        obs['vaccineCode']['text'],
+        obs['doseQuantity']['value'],
+        obs['doseQuantity']['unit'],
+        obs['manufacturer']['display'],
+        obs['lotNumber'],
+        obs['status'])
+
+
 def _get_medication_by_ref(ref, smart):
     med_id = ref.split("/")[1]
     return Medication.read(med_id, smart.server).code
@@ -106,11 +151,11 @@ def _get_contact(contactinfo: ContactPoint):
 def _get_address(addr: Address):
     if addr is not None:
         return "{0}<br>{1}<br>{2}<br>{3} - {4}<br>{5}".format(addr.use,
-                                                               "<br>".join(addr.line),
-                                                               addr.city,
-                                                               addr.state,
-                                                               addr.postalCode,
-                                                               addr.country)
+                                                              "<br>".join(addr.line),
+                                                              addr.city,
+                                                              addr.state,
+                                                              addr.postalCode,
+                                                              addr.country)
     return ""
 
 
@@ -202,8 +247,25 @@ def callback(request: Request, response_class=RedirectResponse):
             body += "<p>(There are no prescriptions for {0})</p>".format(
                 "him" if 'male' == smart.patient.gender else "her")
 
-        body += """<p><a href="/logout">Change patient</a></p>"""
+        body += "<p>Vitals: <ul><li><strong>Not Found</strong></li></ul></p>"
+        body += "<p>Allergies: <ul><li><strong>Not Found</strong></li></ul></p>"
 
+        immz_rec = _get_immunization(smart)
+        if immz_rec is not None:
+            body += "<p>Immunizations: <ul><li><strong>{0}</strong></li></ul></p>".format('</li><li>'.
+            join([_get_immunication_details(rec.as_json()) for rec in immz_rec]))
+        else:
+            body += "<p>Immunizations: <ul><li><strong>Not Found</strong></li></ul></p>"
+
+        obs_rec = _get_observation(smart)
+
+        body += "<p>Test Results: <ul><li><strong>Not Found</strong></li></ul></p>"
+        body += "<p>Lab Results: <ul><li><strong>Not Found</strong></li></ul></p>"
+        body += "<p>Conditions: <ul><li><strong>Not Found</strong></li></ul></p>"
+        body += "<p>Procedures: <ul><li><strong>Not Found</strong></li></ul></p>"
+        body += "<p>FAmily History: <ul><li><strong>Not Found</strong></li></ul></p>"
+
+        body += """<p><a href="/logout">Change patient</a></p>"""
     return HTMLResponse(body)
 
 
