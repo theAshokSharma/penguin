@@ -86,7 +86,8 @@ def _get_immunication_details(imnz_J):
 
 
 def _get_observation(smart):
-    bundle = Observation.where(struct={'subject': smart.patient_id, 'category': 'vital-signs'}).perform(smart.server)
+    bundle = Observation.where(struct={'patient': smart.patient_id, 'code': '85354-9'}).\
+        perform(smart.server)
     obs = [be.resource for be in bundle.entry] if bundle is not None and \
         bundle.entry is not None else None
 
