@@ -6,17 +6,17 @@ import uvicorn
 
 # from starlette.requests import Request
 from starlette.middleware.sessions import SessionMiddleware
-from starlette.responses import HTMLResponse
 # from authlib.integrations.starlette_client import OAuth, OAuthError
 
 from fhirclient import client
 from fhirclient.models.medication import Medication
 from fhirclient.models.medicationrequest import MedicationRequest
-from fhirclient.models.contactpoint import ContactPoint
-from fhirclient.models.address import Address
 from fhirclient.models.immunization import Immunization
 from fhirclient.models.observation import Observation
-from fhirclient.models.list import List
+from fhirclient.models.observation import ObservationComponent
+from fhirclient.models.allergyintolerance import AllergyIntolerance
+
+from penguin.model.patientinfo import PatientInfo
 
 REQ: Request = None
 
@@ -70,11 +70,10 @@ def _get_immunization(smart):
         bundle.entry is not None else None
 
     imnz = [im for im in imnzs if im.resource_type != 'OperationOutcome']
-
     return imnz
 
 
-def _get_immunication_details(imnz_J):
+def _get_immunization_details(imnz_J):
     return "{0} {1} {2} {3} Manufacturer: {4} Lot# {5} Status: {6}".format(
         imnz_J['occurrenceDateTime'],
         imnz_J['vaccineCode']['text'],
@@ -85,26 +84,41 @@ def _get_immunication_details(imnz_J):
         imnz_J['status'])
 
 
-def _get_observation(smart):
-    bundle = Observation.where(struct={'patient': smart.patient_id, 'code': '85354-9'}).\
-        perform(smart.server)
-    obs = [be.resource for be in bundle.entry] if bundle is not None and \
-        bundle.entry is not None else None
+def _get_observation_vitalsigns(smart):
+    resources = Observation.where(struct={'patient': smart.patient_id, 'category': 'vital-signs'}).\
+        perform_resources(smart.server)
 
-    obs_ = [ob for ob in obs if ob.resource_type != 'OperationOutcome']
-
-    return obs_
+    resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
+    return resources_
 
 
-def _get_observation_details(obs):
-    return "{0} {1} {2} {3} Manufacturer: {4} Lot# {5} Status: {6}".format(
-        obs['occurrenceDateTime'],
-        obs['vaccineCode']['text'],
-        obs['doseQuantity']['value'],
-        obs['doseQuantity']['unit'],
-        obs['manufacturer']['display'],
-        obs['lotNumber'],
-        obs['status'])
+def _get_allergies(smart):
+    resources = AllergyIntolerance.where(struct={'patient': smart.patient_id}).\
+        perform_resources(smart.server)
+
+    resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
+    return resources_
+
+
+def _get_observation_component_data(obsComponent: ObservationComponent):
+    details = "  ".join([c.code.text + " " +
+        str(c.valueQuantity.value) + " " +
+        c.valueQuantity.unit for c in obsComponent])
+    return details
+
+
+def _get_observation_details_vitalsigns(vs: Observation):
+    vs_text = vs.code.text
+    effdate = vs.effectiveDateTime.isostring
+    issdate = vs.issued.isostring
+
+    if vs.component is not None:
+        obsdata = _get_observation_component_data(vs.component)
+    elif vs.valueQuantity is not None:
+        obsdata = str(vs.valueQuantity.value) + " " + vs.valueQuantity.unit
+    else:
+        obsdata = ""
+    return "{0} {1} {2} {3}".format(effdate, issdate, vs_text, obsdata)
 
 
 def _get_medication_by_ref(ref, smart):
@@ -135,29 +149,6 @@ def _get_med_name(prescription, client=None):
             return 'Error: medication not found'
     else:
         return ""  # "unmanaged resource type: {0}".format(prescription.resource_type)
-
-
-def _get_contact(contactinfo: ContactPoint):
-    if contactinfo is not None:
-        if contactinfo.system == 'phone':
-            return "{0} - {1} ({2})".format(contactinfo.system if contactinfo.system is not None else "unknown",
-                                           contactinfo.value if contactinfo.value is not None else "unknown",
-                                           contactinfo.use if contactinfo.use is not None else "unknown")
-        else:
-            return "{0} - {1}".format(contactinfo.system if contactinfo.system is not None else "unknown",
-                                contactinfo.value if contactinfo.value is not None else "unknown")
-    return ""
-
-
-def _get_address(addr: Address):
-    if addr is not None:
-        return "{0}<br>{1}<br>{2}<br>{3} - {4}<br>{5}".format(addr.use,
-                                                              "<br>".join(addr.line),
-                                                              addr.city,
-                                                              addr.state,
-                                                              addr.postalCode,
-                                                              addr.country)
-    return ""
 
 
 app = FastAPI()
@@ -215,29 +206,31 @@ def callback(request: Request, response_class=RedirectResponse):
 
     body = "<h1>Hello</h1>"
     if smart.ready and smart.patient is not None:
-        name = smart.human_name(smart.patient.name[0]
-                if smart.patient.name and len(smart.patient.name) > 0 else 'Unknown')
-        dob = smart.patient.birthDate.isostring if smart.patient.birthDate is not None else None
-        gp = smart.patient.generalPractitioner[0].display if smart.patient.generalPractitioner is not None else None
-        patientID = smart.patient_id
-        maritalstatus = smart.patient.maritalStatus.text if smart.patient.maritalStatus is not None else None
-        lang = smart.patient.communication[0].language.coding[0].display
+
+        pat = PatientInfo.fromFHIRPatient(smart.patient)
+
+        alrgy_rec = _get_allergies(smart)
 
         # generate simple body text
-        body += "<p>Patient <em>{0}</em>.</p>".format(name)
-        body += "<p>ID: <strong>{0}</strong></p>".format(patientID)
-        body += "<p>Birth Date: <strong>{0}</strong></p>".format(dob)
-        body += "<p>Marital Status: <strong>{0}</strong></p>".format(maritalstatus)
-        body += "<p>Language: <strong>{0}</strong></p>".format(lang)
-        body += "<p>General Practioner: <strong>{0}</strong></p>".format(gp)
+        body += "<p>Patient <em>{0}</em>.</p>".format(pat.full_name())
+        body += "<p>ID: <strong>{0}</strong></p>".format(pat.patientID)
+        body += "<p>Birth Date: <strong>{0}</strong></p>".format(pat.birth_date)
+        body += "<p>Marital Status: <strong>{0}</strong></p>".format(pat.marital_status)
+        body += "<p>Language: <strong>{0}</strong></p>".format(pat.preferred_lang)
+        body += "<p>General Practioner: <strong>{0}</strong></p>".format(pat.practitioner)
 
         # get all contact number
-        body += "<p>ontact Information(s): <ul><li><strong>{0}</strong></li></ul></p>".format('</li><li>'.
-            join([_get_contact(cntc) for cntc in smart.patient.telecom]))
+        body += "<p>Mobile Phone: <strong>{0}</strong></p>".format(pat.phone_mobile)
+        body += "<p>Home Phone: <strong>{0}</strong></p>".format(pat.phone_home)
+        body += "<p>Work Phone: <strong>{0}</strong></p>".format(pat.phone_work)
 
         # get all home address on the record
-        body += "<p>Address: <ul><li><strong>{0}</strong></li></ul></p>".format('</li><li>'.
-            join([_get_address(addr) for addr in smart.patient.address]))
+        body += "<p>Address:</p>"
+        body += "<strong>{0}</strong><br>".format(pat.home_address["line1"])
+        body += "<strong>{0}</strong><br>".format(pat.home_address["line2"])
+        body += "<strong>{0}, {1} {2}</strong><br>".format(pat.home_address["city"],
+            pat.home_address['state'], pat.home_address['zip_code'])
+        body += "<strong>{0}</strong><br>".format(pat.home_address["country"])
 
         pres = _get_prescriptions(smart)
         if pres is not None:
@@ -248,17 +241,21 @@ def callback(request: Request, response_class=RedirectResponse):
             body += "<p>(There are no prescriptions for {0})</p>".format(
                 "him" if 'male' == smart.patient.gender else "her")
 
-        body += "<p>Vitals: <ul><li><strong>Not Found</strong></li></ul></p>"
+        obs_rec = _get_observation_vitalsigns(smart)
+        if obs_rec is not None:
+            body += "<p>Vitals: <ul><li>{0}</li></ul></p>".format('</li><li>'.
+            join([_get_observation_details_vitalsigns(rec) for rec in obs_rec]))
+        else:
+            body += "<p>Vitals: <ul><li><strong>Not Found</strong></li></ul></p>"
+
         body += "<p>Allergies: <ul><li><strong>Not Found</strong></li></ul></p>"
 
         immz_rec = _get_immunization(smart)
         if immz_rec is not None:
-            body += "<p>Immunizations: <ul><li><strong>{0}</strong></li></ul></p>".format('</li><li>'.
-            join([_get_immunication_details(rec.as_json()) for rec in immz_rec]))
+            body += "<p>Immunizations: <ul><li>{0}</li></ul></p>".format('</li><li>'.
+            join([_get_immunization_details(rec.as_json()) for rec in immz_rec]))
         else:
             body += "<p>Immunizations: <ul><li><strong>Not Found</strong></li></ul></p>"
-
-        obs_rec = _get_observation(smart)
 
         body += "<p>Test Results: <ul><li><strong>Not Found</strong></li></ul></p>"
         body += "<p>Lab Results: <ul><li><strong>Not Found</strong></li></ul></p>"
@@ -287,7 +284,7 @@ def reset():
 if __name__ == '__main__':
     uvicorn.run("fastapi_client:app",
                 host='127.0.0.1',
-                port=9050,
+                port=5465,
                 log_level="info",
                 reload=True)
 #                # ssl_keyfile="../ssl/localhost.key",
