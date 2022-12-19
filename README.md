@@ -20,3 +20,8 @@ fastapi to invoke auth service
 
 
 ### google https://google-auth.readthedocs.io/en/master/user-guide.html
+
+
+### Working with SMART on FHIR ID Tokens
+##### !pip3 install python-jose
+###### https://hl7.org/implement/standards/fhir/smart-app-launch/1.0.0/worked_example_id_token/

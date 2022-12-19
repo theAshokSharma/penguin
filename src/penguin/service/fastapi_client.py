@@ -15,8 +15,10 @@ from fhirclient.models.immunization import Immunization
 from fhirclient.models.observation import Observation
 from fhirclient.models.observation import ObservationComponent
 from fhirclient.models.allergyintolerance import AllergyIntolerance
+from fhirclient.models.condition import Condition
 
 from penguin.model.patientinfo import PatientInfo
+from penguin.model.patientcondition import PatientCondition
 
 REQ: Request = None
 
@@ -24,7 +26,7 @@ REQ: Request = None
 smart_defaults = {
     'app_id': os.environ.get("EPIC_CLIENT_ID"),
     'api_base': os.environ.get('EPIC_API_BASE_R4'),
-    'redirect_uri': os.environ.get('EPIC_REDIRECT_URL'),
+    'redirect_uri': os.environ.get('APP_REDIRECT_URL'),
     'launch_token': '',
     'jwt_token': ''
 }
@@ -210,6 +212,7 @@ def callback(request: Request, response_class=RedirectResponse):
         pat = PatientInfo.fromFHIRPatient(smart.patient)
 
         alrgy_rec = _get_allergies(smart)
+        cond_rec = PatientCondition.get_conditions(smart)
 
         # generate simple body text
         body += "<p>Patient <em>{0}</em>.</p>".format(pat.full_name())
