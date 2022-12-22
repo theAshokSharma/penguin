@@ -15,7 +15,6 @@ from fhirclient.models.immunization import Immunization
 from fhirclient.models.observation import Observation
 from fhirclient.models.observation import ObservationComponent
 from fhirclient.models.allergyintolerance import AllergyIntolerance
-from fhirclient.models.condition import Condition
 
 from penguin.model.patientinfo import PatientInfo
 from penguin.model.patientcondition import PatientCondition
@@ -181,7 +180,8 @@ def root(request: Request):
         pres = _get_prescriptions(smart)
         if pres is not None:
             body += "<p>{0} prescriptions: <ul><li>{1}</li></ul></p>".format(
-                "His" if 'male' == smart.patient.gender else "Her", '</li><li>'.join([_get_med_name(p, smart) for p in pres]))
+                "His" if 'male' == smart.patient.gender else "Her", '</li><li>'.
+                    join([_get_med_name(p, smart) for p in pres]))
         else:
             body += "<p>(There are no prescriptions for {0})</p>".\
                 format("him" if 'male' == smart.patient.gender else "her")
@@ -204,7 +204,8 @@ def callback(request: Request, response_class=RedirectResponse):
     try:
         smart.handle_callback(request.url._url)
     except Exception as e:
-        return HTMLResponse("""<h1>Authorization Error</h1><p>{0}</p><p><a href="/">Start over</a></p>""".format(e))
+        return HTMLResponse("""<h1>Authorization Error</h1><p>{0}</p><p><a href="/">Start over</a></p>""".
+        format(e))
 
     body = "<h1>Hello</h1>"
     if smart.ready and smart.patient is not None:
@@ -212,7 +213,7 @@ def callback(request: Request, response_class=RedirectResponse):
         pat = PatientInfo.fromFHIRPatient(smart.patient)
 
         alrgy_rec = _get_allergies(smart)
-        cond_rec = PatientCondition.get_conditions(smart)
+        cond_rec = PatientCondition.get_patientConditions(smart)
 
         # generate simple body text
         body += "<p>Patient <em>{0}</em>.</p>".format(pat.full_name())
@@ -244,6 +245,12 @@ def callback(request: Request, response_class=RedirectResponse):
             body += "<p>(There are no prescriptions for {0})</p>".format(
                 "him" if 'male' == smart.patient.gender else "her")
 
+        body += "<p>Conditions:</p>"
+        body += "<strong>{0}</strong><br>".format(cond_rec[0].condition)
+        body += "<strong>Clinical Status: {0}</strong><br>".format(cond_rec[0].clinicalStatus)
+        body += "<strong>Verif..n Status:{0}</strong><br>".format(cond_rec[0].verificationStatus)
+        body += "<strong>recorded on: {0}</strong><br>".format(cond_rec[0].recordedDate)
+
         obs_rec = _get_observation_vitalsigns(smart)
         if obs_rec is not None:
             body += "<p>Vitals: <ul><li>{0}</li></ul></p>".format('</li><li>'.
@@ -262,7 +269,7 @@ def callback(request: Request, response_class=RedirectResponse):
 
         body += "<p>Test Results: <ul><li><strong>Not Found</strong></li></ul></p>"
         body += "<p>Lab Results: <ul><li><strong>Not Found</strong></li></ul></p>"
-        body += "<p>Conditions: <ul><li><strong>Not Found</strong></li></ul></p>"
+
         body += "<p>Procedures: <ul><li><strong>Not Found</strong></li></ul></p>"
         body += "<p>FAmily History: <ul><li><strong>Not Found</strong></li></ul></p>"
 

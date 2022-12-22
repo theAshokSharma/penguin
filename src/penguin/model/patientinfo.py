@@ -56,6 +56,7 @@ class PatientInfo:
         phone_mobile = PatientInfo._get_contact(pat.telecom, 'phone', 'mobile')
         phone_work = PatientInfo._get_contact(pat.telecom, 'phone', 'work')
         email = PatientInfo._get_contact(pat.telecom, 'email', None)
+        
         return cls(patientID, given_name, family_name, gender, birth_date, phone_mobile, phone_home,
         phone_work, email, home_address, practitioner, marital_status, preferred_lang, managing_organization)
 
