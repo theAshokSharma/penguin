@@ -11,13 +11,12 @@ from starlette.middleware.sessions import SessionMiddleware
 from fhirclient import client
 from fhirclient.models.medication import Medication
 from fhirclient.models.medicationrequest import MedicationRequest
-from fhirclient.models.immunization import Immunization
-from fhirclient.models.observation import Observation
-from fhirclient.models.observation import ObservationComponent
 from fhirclient.models.allergyintolerance import AllergyIntolerance
 
 from penguin.model.patientinfo import PatientInfo
 from penguin.model.patientcondition import PatientCondition
+from penguin.model.patientimmunization import PatientImmunization
+from penguin.model.patientvitalsigns import PatientVitalSigns
 
 REQ: Request = None
 
@@ -65,61 +64,12 @@ def _get_prescriptions(smart):
     return None
 
 
-def _get_immunization(smart):
-    bundle = Immunization.where({'patient': smart.patient_id}).perform(smart.server)
-    imnzs = [be.resource for be in bundle.entry] if bundle is not None and \
-        bundle.entry is not None else None
-
-    imnz = [im for im in imnzs if im.resource_type != 'OperationOutcome']
-    return imnz
-
-
-def _get_immunization_details(imnz_J):
-    return "{0} {1} {2} {3} Manufacturer: {4} Lot# {5} Status: {6}".format(
-        imnz_J['occurrenceDateTime'],
-        imnz_J['vaccineCode']['text'],
-        imnz_J['doseQuantity']['value'],
-        imnz_J['doseQuantity']['unit'],
-        imnz_J['manufacturer']['display'],
-        imnz_J['lotNumber'],
-        imnz_J['status'])
-
-
-def _get_observation_vitalsigns(smart):
-    resources = Observation.where(struct={'patient': smart.patient_id, 'category': 'vital-signs'}).\
-        perform_resources(smart.server)
-
-    resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
-    return resources_
-
-
 def _get_allergies(smart):
     resources = AllergyIntolerance.where(struct={'patient': smart.patient_id}).\
         perform_resources(smart.server)
 
     resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
     return resources_
-
-
-def _get_observation_component_data(obsComponent: ObservationComponent):
-    details = "  ".join([c.code.text + " " +
-        str(c.valueQuantity.value) + " " +
-        c.valueQuantity.unit for c in obsComponent])
-    return details
-
-
-def _get_observation_details_vitalsigns(vs: Observation):
-    vs_text = vs.code.text
-    effdate = vs.effectiveDateTime.isostring
-    issdate = vs.issued.isostring
-
-    if vs.component is not None:
-        obsdata = _get_observation_component_data(vs.component)
-    elif vs.valueQuantity is not None:
-        obsdata = str(vs.valueQuantity.value) + " " + vs.valueQuantity.unit
-    else:
-        obsdata = ""
-    return "{0} {1} {2} {3}".format(effdate, issdate, vs_text, obsdata)
 
 
 def _get_medication_by_ref(ref, smart):
@@ -213,7 +163,6 @@ def callback(request: Request, response_class=RedirectResponse):
         pat = PatientInfo.fromFHIRPatient(smart.patient)
 
         alrgy_rec = _get_allergies(smart)
-        cond_rec = PatientCondition.get_patientConditions(smart)
 
         # generate simple body text
         body += "<p>Patient <em>{0}</em>.</p>".format(pat.full_name())
@@ -245,25 +194,26 @@ def callback(request: Request, response_class=RedirectResponse):
             body += "<p>(There are no prescriptions for {0})</p>".format(
                 "him" if 'male' == smart.patient.gender else "her")
 
-        body += "<p>Conditions:</p>"
-        body += "<strong>{0}</strong><br>".format(cond_rec[0].condition)
-        body += "<strong>Clinical Status: {0}</strong><br>".format(cond_rec[0].clinicalStatus)
-        body += "<strong>Verif..n Status:{0}</strong><br>".format(cond_rec[0].verificationStatus)
-        body += "<strong>recorded on: {0}</strong><br>".format(cond_rec[0].recordedDate)
+        cond_rec = PatientCondition.get_patientConditions(smart)
+        if cond_rec is not None:
+            body += "<p>Conditions: <ul><li>{0}</li></ul></p>".format('</li><li>'.
+            join([rec.toString() for rec in cond_rec]))
+        else:
+            body += "<p>Conditions: <ul><li><strong>Not Found</strong></li></ul></p>"
 
-        obs_rec = _get_observation_vitalsigns(smart)
-        if obs_rec is not None:
+        obs_vs = PatientVitalSigns.get_patientVitalSigns(smart)
+        if obs_vs is not None:
             body += "<p>Vitals: <ul><li>{0}</li></ul></p>".format('</li><li>'.
-            join([_get_observation_details_vitalsigns(rec) for rec in obs_rec]))
+            join([rec.toString() for rec in obs_vs]))
         else:
             body += "<p>Vitals: <ul><li><strong>Not Found</strong></li></ul></p>"
 
         body += "<p>Allergies: <ul><li><strong>Not Found</strong></li></ul></p>"
 
-        immz_rec = _get_immunization(smart)
+        immz_rec = PatientImmunization.get_patientImmunization(smart)
         if immz_rec is not None:
             body += "<p>Immunizations: <ul><li>{0}</li></ul></p>".format('</li><li>'.
-            join([_get_immunization_details(rec.as_json()) for rec in immz_rec]))
+            join([rec.toString() for rec in immz_rec]))
         else:
             body += "<p>Immunizations: <ul><li><strong>Not Found</strong></li></ul></p>"
 

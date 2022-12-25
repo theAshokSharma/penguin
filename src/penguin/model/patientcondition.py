@@ -24,7 +24,20 @@ class PatientCondition:
         onsetEnd = cnd.onsetPeriod.end.isostring if cnd.onsetPeriod is not None else None
         severity = cnd.severity
 
-        return cls(status, verStatus, severity, condition, onsetStart, onsetEnd, recDate)
+        return cls(clinicalStatus=status,
+                   verificationStatus=verStatus,
+                   severity=severity,
+                   condition=condition,
+                   onsetStart=onsetStart,
+                   onsetEnd=onsetEnd,
+                   recordedDate=recDate)
+
+    def toString(self):
+        return "Date:{0}  {1} Clinical Status: {2}  Verification Status:{3}".format(
+            self.recordedDate,
+            self.condition,
+            self.clinicalStatus,
+            self.verificationStatus)
 
     @staticmethod
     def get_conditions(smart):
