@@ -3,6 +3,8 @@ from dataclasses import dataclass
 
 from fhirclient.models.condition import Condition
 
+# https://hl7.org/fhir/condition.html
+# https://patient-browser.smarthealthit.org/#/patient/2
 
 @dataclass
 class PatientCondition:
