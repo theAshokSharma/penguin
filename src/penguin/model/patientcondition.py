@@ -54,7 +54,7 @@ class PatientCondition:
         return resources_
 
     @staticmethod
-    def get_patientConditions(smart):
+    def get_patient_conditions(smart):
         cnds = PatientCondition.get_conditions(smart)
 
         if cnds is None:

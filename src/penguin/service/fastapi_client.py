@@ -16,7 +16,7 @@ from fhirclient.models.allergyintolerance import AllergyIntolerance
 from penguin.model.patientinfo import PatientInfo
 from penguin.model.patientcondition import PatientCondition
 from penguin.model.patientimmunization import PatientImmunization
-from penguin.model.patientvitalsigns import PatientVitalSigns
+from penguin.model.patientobservations import PatientObservation
 
 REQ: Request = None
 
@@ -38,9 +38,11 @@ def _get_smart():
     state = REQ.session.get('state')
 
     if state:
-        return client.FHIRClient(state=state, save_func=_save_state)
+        return client.FHIRClient(state=state,
+                                 save_func=_save_state)
     else:
-        return client.FHIRClient(settings=smart_defaults, save_func=_save_state)
+        return client.FHIRClient(settings=smart_defaults,
+                                 save_func=_save_state)
 
 
 def _logout():
@@ -162,6 +164,7 @@ def callback(request: Request, response_class=RedirectResponse):
 
         pat = PatientInfo.fromFHIRPatient(smart.patient)
 
+
         alrgy_rec = _get_allergies(smart)
 
         # generate simple body text
@@ -194,14 +197,14 @@ def callback(request: Request, response_class=RedirectResponse):
             body += "<p>(There are no prescriptions for {0})</p>".format(
                 "him" if 'male' == smart.patient.gender else "her")
 
-        cond_rec = PatientCondition.get_patientConditions(smart)
+        cond_rec = PatientCondition.get_patient_conditions(smart)
         if cond_rec is not None:
             body += "<p>Conditions: <ul><li>{0}</li></ul></p>".format('</li><li>'.
             join([rec.toString() for rec in cond_rec]))
         else:
             body += "<p>Conditions: <ul><li><strong>Not Found</strong></li></ul></p>"
 
-        obs_vs = PatientVitalSigns.get_patientVitalSigns(smart)
+        obs_vs = PatientObservation.get_patient_vital_signs(smart)
         if obs_vs is not None:
             body += "<p>Vitals: <ul><li>{0}</li></ul></p>".format('</li><li>'.
             join([rec.toString() for rec in obs_vs]))
@@ -217,8 +220,12 @@ def callback(request: Request, response_class=RedirectResponse):
         else:
             body += "<p>Immunizations: <ul><li><strong>Not Found</strong></li></ul></p>"
 
-        body += "<p>Test Results: <ul><li><strong>Not Found</strong></li></ul></p>"
-        body += "<p>Lab Results: <ul><li><strong>Not Found</strong></li></ul></p>"
+        lab_reslts = PatientObservation.get_patient_lab_results(smart)
+        if lab_reslts is not None:
+            body += "<p>Test Results: <ul><li>{0}</li></ul></p>".format('</li><li>'.
+            join([rec.toString() for rec in lab_reslts]))
+        else:
+            body += "<p>Test Results: <ul><li><strong>Not Found</strong></li></ul></p>"
 
         body += "<p>Procedures: <ul><li><strong>Not Found</strong></li></ul></p>"
         body += "<p>FAmily History: <ul><li><strong>Not Found</strong></li></ul></p>"

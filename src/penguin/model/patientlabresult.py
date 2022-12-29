@@ -8,8 +8,8 @@ bp_component = ['systolic', 'systolicUnit', 'diastolic', 'diastolicUnit']
 
 # https://build.fhir.org/observation-vitalsigns.html
 @dataclass
-class PatientVitalSigns:
-    vitalsign: str
+class PatientLabResult:
+    name: str
     effdate: datetime
     issdate: datetime
     value: str
@@ -17,7 +17,7 @@ class PatientVitalSigns:
     bp: dict.fromkeys(bp_component)
 
     def toString(self):
-        if self.vitalsign == 'Blood Pressure':
+        if self.name == 'Blood Pressure':
             return "{0} Date: {1}   Reading:Systolic: {2} {3}   Diastolic: {4} {5}".format(
                self.vitalsign,
                self.issdate,
@@ -61,24 +61,24 @@ class PatientVitalSigns:
     @staticmethod
     def _get_observation(smart):
         resources = Observation.where(struct={'patient': smart.patient_id,
-                                              'category': 'vital-signs'}).\
+                                              'category': 'laboratory'}).\
             perform_resources(smart.server)
 
         resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
         return resources_
 
     @staticmethod
-    def get_patient_vital_signs(smart):
-        vitals = PatientVitalSigns._get_observation(smart)
+    def get_patient_lab_results(smart):
+        labresults = PatientLabResult._get_observation(smart)
 
-        if vitals is None:
+        if labresults is None:
             return None
 
-        patientvitals = []
+        patientlabresults = []
 
-        for vital in vitals:
-            patientvital = PatientVitalSigns.fromFHIRObservation(vital)
-            patientvitals.append(patientvital)
+        for lab in labresults:
+            patientlabresult = PatientLabResult.fromFHIRObservation(lab)
+            patientlabresults.append(patientlabresult)
 
-        patientvitals.sort(key=lambda x: (x.vitalsign, x.issdate), reverse=True)
-        return patientvitals
+        patientlabresults.sort(key=lambda x: (x.vitalsign, x.issdate), reverse=True)
+        return patientlabresults
