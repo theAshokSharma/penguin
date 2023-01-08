@@ -17,6 +17,7 @@ from penguin.model.patientinfo import PatientInfo
 from penguin.model.patientcondition import PatientCondition
 from penguin.model.patientimmunization import PatientImmunization
 from penguin.model.patientobservations import PatientObservation
+from penguin.model.patientdiagnosticreport import PatientDiagnosticReport
 
 REQ: Request = None
 
@@ -164,7 +165,7 @@ def callback(request: Request, response_class=RedirectResponse):
 
         pat = PatientInfo.fromFHIRPatient(smart.patient)
 
-
+        diagnostic_rpts = PatientDiagnosticReport.get_patient_diagnostic_report(smart)
         alrgy_rec = _get_allergies(smart)
 
         # generate simple body text
@@ -227,8 +228,14 @@ def callback(request: Request, response_class=RedirectResponse):
         else:
             body += "<p>Test Results: <ul><li><strong>Not Found</strong></li></ul></p>"
 
+        sh_reslts = PatientObservation.get_patient_social_history(smart)
+        if sh_reslts is not None:
+            body += "<p>Social History: <ul><li>{0}</li></ul></p>".format('</li><li>'.
+            join([rec.toString() for rec in sh_reslts]))
+        else:
+            body += "<p>Social History: <ul><li><strong>Not Found</strong></li></ul></p>"
+
         body += "<p>Procedures: <ul><li><strong>Not Found</strong></li></ul></p>"
-        body += "<p>FAmily History: <ul><li><strong>Not Found</strong></li></ul></p>"
 
         body += """<p><a href="/logout">Change patient</a></p>"""
     return HTMLResponse(body)
@@ -244,6 +251,7 @@ def login_get():
 @app.get('/reset', response_class=HTMLResponse)
 def reset():
     _reset()
+    _logout()
     response = RedirectResponse(url="/")
     return response
 

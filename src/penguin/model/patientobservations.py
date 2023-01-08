@@ -27,19 +27,24 @@ class PatientObservation:
                self.bp['diastolicUnit'])
         else:
             return "{0} Date: {1}   Reading:{2} {3}".format(
-                self.name,
-                self.issdate,
-                self.value,
-                self.unit)
+               self.name,
+               self.issdate,
+               self.value,
+               self.unit)
 
     @classmethod
     def fromFHIRObservation(cls, vs: Observation):
         bp: dict.fromkeys(bp_component) = {}
         name = vs.code.text
-        effdate = vs.effectiveDateTime.isostring
-        issdate = vs.issued.isostring
-        value = vs.valueQuantity.value if vs.valueQuantity is not None else None
-        unit = vs.valueQuantity.unit if vs.valueQuantity is not None else None
+        effdate = vs.effectiveDateTime.isostring if vs.effectiveInstant is not None else None
+        issdate = vs.issued.isostring if vs.issued is not None else None
+        value = None
+        unit = None
+        if vs.valueCodeableConcept is not None:
+            value = vs.valueCodeableConcept.text
+        elif vs.valueQuantity is not None:
+            value = vs.valueQuantity.value
+            unit = vs.valueQuantity.unit
 
         if vs.component is not None:
             SystolicValQty = next((oc.valueQuantity for oc in vs.component
@@ -61,7 +66,8 @@ class PatientObservation:
     @staticmethod
     def _get_observation(smart, cat: str):
         resources = Observation.where(struct={'patient': smart.patient_id,
-                                              'category': cat}).\
+                                              'category': cat,
+                                              'status': 'final'}).\
             perform_resources(smart.server)
 
         resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
@@ -86,4 +92,9 @@ class PatientObservation:
     @staticmethod
     def get_patient_lab_results(smart):
         obs_all = PatientObservation._get_observation(smart, 'laboratory')
+        return obs_all
+
+    @staticmethod
+    def get_patient_social_history(smart):
+        obs_all = PatientObservation._get_observation(smart, 'social-history')
         return obs_all
