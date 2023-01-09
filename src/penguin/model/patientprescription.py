@@ -9,6 +9,7 @@ from fhirclient.models.medicationrequest import MedicationRequestDispenseRequest
 
 # WORK IN PROGESS
 
+
 @dataclass
 class PatientPrescription:
     medication: str
@@ -16,13 +17,18 @@ class PatientPrescription:
     authored_on: date
     performer: str
     requester: str
-    dispense_req: MedicationRequestDispenseRequest
     instructions: str
     therapy_course: str
+    medication_reason: str
+    supply_duration_value: str
+    supply_duration_unit: str
+    repeats_allowed: str
+    validity_start: date = None
+    validity_end: date = None
 
     @classmethod
     def fromFHIRCondition(cls, medreq: MedicationRequest):
-        dispense_req = medreq.dispenseRequest
+        dispense_req: MedicationRequestDispenseRequest = medreq.dispenseRequest
         medication = medreq.medicationReference.display if medreq.medicationReference is not None else None
         priority = medreq.priority
         authored_on = medreq.authoredOn.isostring
@@ -30,21 +36,36 @@ class PatientPrescription:
         requester = medreq.requester.display if medreq.requester is not None else None
         instructions = medreq.dosageInstruction[0].patientInstruction
         therapy_course = medreq.courseOfTherapyType.text if medreq.courseOfTherapyType is not None else None
+        medication_reason = medreq.reasonCode[0].text if medreq.reasonCode is not None else None
+        supply_duration_value = dispense_req.expectedSupplyDuration.value
+        supply_duration_unit = dispense_req.expectedSupplyDuration.unit
+        repeats_allowed = dispense_req.numberOfRepeatsAllowed
+
+        if dispense_req.validityPeriod is not None:
+            validity_start = dispense_req.validityPeriod.start.isostring\
+                if dispense_req.validityPeriod.start is not None else None
+            validity_end = dispense_req.validityPeriod.end.isostring\
+                if dispense_req.validityPeriod.end is not None else None
         return cls(medication=medication,
                    priority=priority,
                    authored_on=authored_on,
                    performer=performer,
                    requester=requester,
-                   dispense_req=dispense_req,
                    instructions=instructions,
+                   medication_reason=medication_reason,
+                   supply_duration_value=supply_duration_value,
+                   supply_duration_unit=supply_duration_unit,
+                   repeats_allowed=repeats_allowed,
+                   validity_start=validity_start,
+                   validity_end=validity_end,
                    therapy_course=therapy_course)
 
     def toString(self):
-        return "Date:{0}  {1} Clinical Status: {2}  Verification Status:{3}".format(
+        return "Date:{0}  {1} instructions: {2}  {3}".format(
             self.recordedDate,
-            self.condition,
-            self.clinicalStatus,
-            self.verificationStatus)
+            self.medication,
+            self.instructions,
+            self.therapy_course)
 
     @staticmethod
     def _get_presecriptions(smart):
