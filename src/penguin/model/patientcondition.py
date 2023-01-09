@@ -43,7 +43,7 @@ class PatientCondition:
             self.verificationStatus)
 
     @staticmethod
-    def get_conditions(smart):
+    def _get_conditions(smart):
         if smart is None:
             return None
 
@@ -56,7 +56,7 @@ class PatientCondition:
 
     @staticmethod
     def get_patient_conditions(smart):
-        cnds = PatientCondition.get_conditions(smart)
+        cnds = PatientCondition._get_conditions(smart)
 
         if cnds is None:
             return None

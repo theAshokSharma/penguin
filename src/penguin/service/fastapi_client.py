@@ -18,6 +18,7 @@ from penguin.model.patientcondition import PatientCondition
 from penguin.model.patientimmunization import PatientImmunization
 from penguin.model.patientobservations import PatientObservation
 from penguin.model.patientdiagnosticreport import PatientDiagnosticReport
+from penguin.model.patientprescription import PatientPrescription
 
 REQ: Request = None
 
@@ -189,6 +190,7 @@ def callback(request: Request, response_class=RedirectResponse):
             pat.home_address['state'], pat.home_address['zip_code'])
         body += "<strong>{0}</strong><br>".format(pat.home_address["country"])
 
+        pres = PatientPrescription.get_patient_presecriptions(smart)
         pres = _get_prescriptions(smart)
         if pres is not None:
             body += "<p>{0} prescriptions: <ul><li>{1}</li></ul></p>".format(
