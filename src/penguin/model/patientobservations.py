@@ -18,13 +18,19 @@ class PatientObservation:
 
     def toString(self):
         if self.name == 'Blood Pressure':
-            return "{0} Date: {1}   Reading:Systolic: {2} {3},   Diastolic: {4} {5}".format(
+            # return "{0} Date: {1}   Reading:Systolic: {2} {3},   Diastolic: {4} {5}".format(
+            #    self.name,
+            #    self.issdate,
+            #    self.bp['systolic'],
+            #    self.bp['systolicUnit'],
+            #    self.bp['diastolic'],
+            #    self.bp['diastolicUnit'])
+            return "{0} Date: {1}   Reading: {2}/{3} {4}".format(
                self.name,
                self.issdate,
                self.bp['systolic'],
-               self.bp['systolicUnit'],
                self.bp['diastolic'],
-               self.bp['diastolicUnit'])
+               self.bp['diastolicUnit'])          
         else:
             return "{0} Date: {1}   Reading:{2} {3}".format(
                self.name,
@@ -51,10 +57,10 @@ class PatientObservation:
                    if oc.code.text == "Systolic blood pressure"), None)
             DiastolicValQty = next((oc.valueQuantity for oc in vs.component
                     if oc.code.text == "Diastolic blood pressure"), None)
-            bp['systolic'] = SystolicValQty.value
-            bp['systolicUnit'] = SystolicValQty.unit
-            bp['diastolic'] = DiastolicValQty.value
-            bp['diastolicUnit'] = DiastolicValQty.unit
+            bp['systolic'] = SystolicValQty.value if SystolicValQty is not None else None
+            bp['systolicUnit'] = SystolicValQty.unit if SystolicValQty is not None else None
+            bp['diastolic'] = DiastolicValQty.value if DiastolicValQty is not None else None
+            bp['diastolicUnit'] = DiastolicValQty.unit if DiastolicValQty is not None else None
 
         return cls(name=name,
                    effdate=effdate,

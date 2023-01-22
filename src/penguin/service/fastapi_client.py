@@ -24,8 +24,8 @@ REQ: Request = None
 
 # app setup
 smart_defaults = {
-    'app_id': os.environ.get("EPIC_CLIENT_ID"),
-    'api_base': os.environ.get('EPIC_API_BASE_R4'),
+    'app_id': os.environ.get("CERNER_CLIENT_ID"),
+    'api_base': os.environ.get('CERNER_API_BASE_R4'),
     'redirect_uri': os.environ.get('APP_REDIRECT_URL'),
     'launch_token': '',
     'jwt_token': ''
