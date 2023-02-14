@@ -23,12 +23,24 @@ from penguin.model.patientprescription import PatientPrescription
 REQ: Request = None
 
 # app setup
+
+# The settings dictionary supports:
+
+#     - `app_id`*: Your app/client-id, e.g. 'my_web_app'
+#     - `app_secret`*: Your app/client-secret
+#     - `api_base`*: The FHIR service to connect to, e.g. 'https://fhir-api-dstu2.smarthealthit.org'
+#     - `redirect_uri`: The callback/redirect URL for your app, e.g. 'http://localhost:8000/fhir-app/'
+#        when testing locally
+#     - `patient_id`: The patient id against which to operate, if already known
+#     - `scope`: Space-separated list of scopes to request, if other than default
+#     - `launch_token`: The launch token
+#     - `jwt_token`:
+
 smart_defaults = {
     'app_id': os.environ.get("CERNER_CLIENT_ID"),
     'api_base': os.environ.get('CERNER_API_BASE_R4'),
     'redirect_uri': os.environ.get('APP_REDIRECT_URL'),
-    'launch_token': '',
-    'jwt_token': ''
+    'launch_token': ''
 }
 
 
@@ -260,7 +272,7 @@ def reset():
 
 if __name__ == '__main__':
     uvicorn.run("fastapi_client:app",
-                host='127.0.0.1',
+                host='localhost',
                 port=5465,
                 log_level="info",
                 reload=True)
