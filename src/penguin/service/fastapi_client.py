@@ -37,8 +37,8 @@ REQ: Request = None
 #     - `jwt_token`:
 
 smart_defaults = {
-    'app_id': os.environ.get("CERNER_CLIENT_ID"),
-    'api_base': os.environ.get('CERNER_API_BASE_R4'),
+    'app_id': os.environ.get("EPIC_CLIENT_ID"),
+    'api_base': os.environ.get('EPIC_API_BASE'),
     'redirect_uri': os.environ.get('APP_REDIRECT_URL'),
     'launch_token': ''
 }
@@ -258,14 +258,15 @@ def callback(request: Request, response_class=RedirectResponse):
 @app.get("/logout", response_class=HTMLResponse)
 def login_get():
     _logout()
+    _reset()
     response = RedirectResponse(url="/")
     return response
 
 
 @app.get('/reset', response_class=HTMLResponse)
 def reset():
-    _reset()
     _logout()
+    _reset()
     response = RedirectResponse(url="/")
     return response
 
@@ -275,7 +276,7 @@ if __name__ == '__main__':
                 host='localhost',
                 port=5465,
                 log_level="info",
-                reload=True)
-#                # ssl_keyfile="../ssl/localhost.key",
-#                # ssl_certfile="../ssl/localhost.crt")
+                reload=True,
+                ssl_keyfile="ssl/localhost.key",
+                ssl_certfile="ssl/localhost.crt")
     print("running")
