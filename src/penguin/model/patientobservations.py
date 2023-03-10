@@ -41,9 +41,9 @@ class PatientObservation:
     @classmethod
     def fromFHIRObservation(cls, vs: Observation):
         bp: dict.fromkeys(bp_component) = {}
-        name = vs.code.text
-        effdate = vs.effectiveDateTime.isostring if vs.effectiveInstant is not None else None
-        issdate = vs.issued.isostring if vs.issued is not None else None
+        name = vs.code.text if vs.code is not None else ""
+        effdate = vs.effectiveDateTime.isostring if vs.effectiveInstant is not None else ""
+        issdate = vs.issued.isostring if vs.issued is not None else ""
         value = None
         unit = None
         if vs.valueCodeableConcept is not None:
@@ -71,12 +71,16 @@ class PatientObservation:
 
     @staticmethod
     def _get_observation(smart, cat: str):
-        resources = Observation.where(struct={'patient': smart.patient_id,
-                                              'category': cat,
-                                              'status': 'final'}).\
-            perform_resources(smart.server)
 
-        resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
+        try:
+            resources = Observation.where(struct={'patient': smart.patient_id,
+                                                'category': cat,
+                                                'status': 'final'}).\
+                perform_resources(smart.server)
+
+            resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
+        except Exception as e:
+            resources_ = None
 
         if resources_ is None:
             return None
@@ -88,6 +92,7 @@ class PatientObservation:
             patientobs.append(patobs)
 
         patientobs.sort(key=lambda x: (x.name, x.issdate), reverse=True)
+
         return patientobs
 
     @staticmethod

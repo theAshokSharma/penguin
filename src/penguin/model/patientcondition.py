@@ -47,11 +47,15 @@ class PatientCondition:
         if smart is None:
             return None
 
-        resources = Condition.where(struct={'patient': smart.patient_id}).\
-            perform_resources(smart.server)
+        try:
+            resources = Condition.where(struct={'patient': smart.patient_id}).\
+                perform_resources(smart.server)
 
-        resources_ = [src for src in resources if src.resource_type != 'OperationOutcome' and
-            src.clinicalStatus is not None]
+            resources_ = [src for src in resources if src.resource_type != 'OperationOutcome' and
+                src.clinicalStatus is not None]
+        except Exception as e:
+            resources_ = None
+
         return resources_
 
     @staticmethod

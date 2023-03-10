@@ -1,6 +1,7 @@
 from datetime import date
 from dataclasses import dataclass
 
+from fhirclient.server import FHIRPermissionDeniedException
 from fhirclient.models.diagnosticreport import DiagnosticReport
 
 # https://hl7.org/fhir/condition.html
@@ -10,6 +11,7 @@ from fhirclient.models.diagnosticreport import DiagnosticReport
 
 @dataclass
 class PatientDiagnosticReport:
+    exception: bool
     clinicalStatus: str
     verificationStatus: str
     severity: str
@@ -17,6 +19,7 @@ class PatientDiagnosticReport:
     onsetStart: date
     onsetEnd: date
     recordedDate: date
+    exceptionMessage: str
 
     @classmethod
     def fromFHIRCondition(cls, dr: DiagnosticReport):
@@ -50,8 +53,14 @@ class PatientDiagnosticReport:
         if smart is None:
             return None
 
-        resources = DiagnosticReport.where(struct={'patient': smart.patient_id}).\
-            perform_resources(smart.server)
+        try:
+            resources = DiagnosticReport.where(struct={'patient': smart.patient_id}).\
+                perform_resources(smart.server)
+        except Exception as e:
+            # FHIRPermissionDeniedException:
+            return None
+        except FHIRPermissionDeniedException as ex:
+            return None
 
         resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
         return resources_

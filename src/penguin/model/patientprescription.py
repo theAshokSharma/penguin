@@ -72,10 +72,14 @@ class PatientPrescription:
         if smart is None:
             return None
 
-        resources = MedicationRequest.where(struct={'patient': smart.patient_id}).\
-            perform_resources(smart.server)
+        try:
+            resources = MedicationRequest.where(struct={'patient': smart.patient_id}).\
+                perform_resources(smart.server)
 
-        resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
+            resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
+        except Exception as e:
+            resources_ = None
+
         return resources_
 
     @staticmethod

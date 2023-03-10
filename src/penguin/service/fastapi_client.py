@@ -37,9 +37,10 @@ REQ: Request = None
 #     - `jwt_token`:
 
 smart_defaults = {
-    'app_id': os.environ.get("EPIC_CLIENT_ID"),
-    'api_base': os.environ.get('EPIC_API_BASE'),
+    'app_id': os.environ.get("CERNER_CLIENT_ID"),
+    'api_base': os.environ.get('CERNER_API_BASE'),
     'redirect_uri': os.environ.get('APP_REDIRECT_URL'),
+    'scope': 'patient/Patient.read patient/Observation.read launch/patient online_access openid profile',
     'launch_token': ''
 }
 
@@ -71,9 +72,13 @@ def _reset():
 
 
 def _get_prescriptions(smart):
-    bundle = MedicationRequest.where({'patient': smart.patient_id}).perform(smart.server)
-    pres = [be.resource for be in bundle.entry] if bundle is not None and \
-        bundle.entry is not None else None
+
+    try:
+        bundle = MedicationRequest.where({'patient': smart.patient_id}).perform(smart.server)
+        pres = [be.resource for be in bundle.entry] if bundle is not None and \
+            bundle.entry is not None else None
+    except Exception as e:
+        pres = None
 
     if pres is not None and len(pres) > 0:
         return pres
@@ -81,10 +86,14 @@ def _get_prescriptions(smart):
 
 
 def _get_allergies(smart):
-    resources = AllergyIntolerance.where(struct={'patient': smart.patient_id}).\
-        perform_resources(smart.server)
+    try:
+        resources = AllergyIntolerance.where(struct={'patient': smart.patient_id}).\
+            perform_resources(smart.server)
 
-    resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
+        resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
+    except Exception as e:
+        resources_ = None
+
     return resources_
 
 

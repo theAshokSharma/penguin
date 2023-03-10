@@ -51,11 +51,15 @@ class PatientImmunization:
         if smart is None:
             return None
 
-        resources = Immunization.where(struct={'patient': smart.patient_id}).\
-            perform_resources(smart.server)
+        try:
+            resources = Immunization.where(struct={'patient': smart.patient_id}).\
+                perform_resources(smart.server)
 
-        resources_ = [src for src in resources if src.resource_type != 'OperationOutcome' and
-            src.status == 'completed']
+            resources_ = [src for src in resources if src.resource_type != 'OperationOutcome' and
+                src.status == 'completed']
+        except Exception as e:
+            resources_ = None
+            
         return resources_
 
     @staticmethod
