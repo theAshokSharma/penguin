@@ -62,7 +62,7 @@ class PatientPrescription:
 
     def toString(self):
         return "Date:{0}  {1} instructions: {2}  {3}".format(
-            self.recordedDate,
+            self.validity_start,
             self.medication,
             self.instructions,
             self.therapy_course)

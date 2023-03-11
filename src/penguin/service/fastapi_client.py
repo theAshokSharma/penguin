@@ -9,8 +9,6 @@ from starlette.middleware.sessions import SessionMiddleware
 # from authlib.integrations.starlette_client import OAuth, OAuthError
 
 from fhirclient import client
-from fhirclient.models.medication import Medication
-from fhirclient.models.medicationrequest import MedicationRequest
 from fhirclient.models.allergyintolerance import AllergyIntolerance
 
 from penguin.model.patientinfo import PatientInfo
@@ -19,6 +17,7 @@ from penguin.model.patientimmunization import PatientImmunization
 from penguin.model.patientobservations import PatientObservation
 from penguin.model.patientdiagnosticreport import PatientDiagnosticReport
 from penguin.model.patientprescription import PatientPrescription
+from penguin.model.patientallergies import PatientAllergies
 
 REQ: Request = None
 
@@ -37,8 +36,8 @@ REQ: Request = None
 #     - `jwt_token`:
 
 smart_defaults = {
-    'app_id': os.environ.get("CERNER_CLIENT_ID"),
-    'api_base': os.environ.get('CERNER_API_BASE'),
+    'app_id': os.environ.get("EPIC_CLIENT_ID"),
+    'api_base': os.environ.get('EPIC_API_BASE'),
     'redirect_uri': os.environ.get('APP_REDIRECT_URL'),
     'scope': 'patient/Patient.read patient/Observation.read launch/patient online_access openid profile',
     'launch_token': ''
@@ -71,18 +70,18 @@ def _reset():
         del REQ.session['state']
 
 
-def _get_prescriptions(smart):
+# def _get_prescriptions(smart):
 
-    try:
-        bundle = MedicationRequest.where({'patient': smart.patient_id}).perform(smart.server)
-        pres = [be.resource for be in bundle.entry] if bundle is not None and \
-            bundle.entry is not None else None
-    except Exception as e:
-        pres = None
+#     try:
+#         bundle = MedicationRequest.where({'patient': smart.patient_id}).perform(smart.server)
+#         pres = [be.resource for be in bundle.entry] if bundle is not None and \
+#             bundle.entry is not None else None
+#     except Exception as e:
+#         pres = None
 
-    if pres is not None and len(pres) > 0:
-        return pres
-    return None
+#     if pres is not None and len(pres) > 0:
+#         return pres
+#     return None
 
 
 def _get_allergies(smart):
@@ -97,34 +96,34 @@ def _get_allergies(smart):
     return resources_
 
 
-def _get_medication_by_ref(ref, smart):
-    med_id = ref.split("/")[1]
-    return Medication.read(med_id, smart.server).code
+# def _get_medication_by_ref(ref, smart):
+#     med_id = ref.split("/")[1]
+#     return Medication.read(med_id, smart.server).code
 
 
-def _med_name(med):
-    if med.coding:
-        name = next((coding.display for coding in med.coding
-                     if coding.system == 'http://www.nlm.nih.gov/research/umls/rxnorm'), None)
-        if name:
-            return name
-    if med.text:
-        return med.text
-    return "Unnamed Medication(TM)"
+# def _med_name(med):
+#     if med.coding:
+#         name = next((coding.display for coding in med.coding
+#                      if coding.system == 'http://www.nlm.nih.gov/research/umls/rxnorm'), None)
+#         if name:
+#             return name
+#     if med.text:
+#         return med.text
+#     return "Unnamed Medication(TM)"
 
 
-def _get_med_name(prescription, client=None):
-    if prescription.resource_type == 'MedicationRequest':
-        if prescription.medicationCodeableConcept is not None:
-            med = prescription.medicationCodeableConcept
-            return _med_name(med)
-        elif prescription.medicationReference is not None and client is not None:
-            med = _get_medication_by_ref(prescription.medicationReference.reference, client)
-            return _med_name(med)
-        else:
-            return 'Error: medication not found'
-    else:
-        return ""  # "unmanaged resource type: {0}".format(prescription.resource_type)
+# def _get_med_name(prescription, client=None):
+#     if prescription.resource_type == 'MedicationRequest':
+#         if prescription.medicationCodeableConcept is not None:
+#             med = prescription.medicationCodeableConcept
+#             return _med_name(med)
+#         elif prescription.medicationReference is not None and client is not None:
+#             med = _get_medication_by_ref(prescription.medicationReference.reference, client)
+#             return _med_name(med)
+#         else:
+#             return 'Error: medication not found'
+#     else:
+#         return ""  # "unmanaged resource type: {0}".format(prescription.resource_type)
 
 
 app = FastAPI()
@@ -151,16 +150,6 @@ def root(request: Request):
         body += "<p>You are authorized and ready to make API requests for <em>{0}</em>.</p>".format(name)
         body += "<p><strong>Birth Date: </strong>{0}</p>".format(dob)
         body += "<p><strong>Birth Date: </strong>{0}</p>".format(patientID)
-
-        pres = _get_prescriptions(smart)
-        if pres is not None:
-            body += "<p>{0} prescriptions: <ul><li>{1}</li></ul></p>".format(
-                "His" if 'male' == smart.patient.gender else "Her", '</li><li>'.
-                    join([_get_med_name(p, smart) for p in pres]))
-        else:
-            body += "<p>(There are no prescriptions for {0})</p>".\
-                format("him" if 'male' == smart.patient.gender else "her")
-        body += """<p><a href="/logout">Change patient</a></p>"""
     else:
         auth_url = smart.authorize_url
         if auth_url is not None:
@@ -188,7 +177,6 @@ def callback(request: Request, response_class=RedirectResponse):
         pat = PatientInfo.fromFHIRPatient(smart.patient)
 
         diagnostic_rpts = PatientDiagnosticReport.get_patient_diagnostic_report(smart)
-        alrgy_rec = _get_allergies(smart)
 
         # generate simple body text
         body += "<p>Patient <em>{0}</em>.</p>".format(pat.full_name())
@@ -212,11 +200,11 @@ def callback(request: Request, response_class=RedirectResponse):
         body += "<strong>{0}</strong><br>".format(pat.home_address["country"])
 
         pres = PatientPrescription.get_patient_presecriptions(smart)
-        pres = _get_prescriptions(smart)
         if pres is not None:
             body += "<p>{0} prescriptions: <ul><li>{1}</li></ul></p>".format(
                 "His" if 'male' == smart.patient.gender else "Her", '</li><li>'.
-                join([_get_med_name(p, smart) for p in pres]))
+                join([rec.toString() for rec in pres]))
+#                join([_get_med_name(p, smart) for p in pres]))
         else:
             body += "<p>(There are no prescriptions for {0})</p>".format(
                 "him" if 'male' == smart.patient.gender else "her")
@@ -235,6 +223,7 @@ def callback(request: Request, response_class=RedirectResponse):
         else:
             body += "<p>Vitals: <ul><li><strong>Not Found</strong></li></ul></p>"
 
+        alrgy_rec = PatientAllergies.get_patientAllergies(smart)
         body += "<p>Allergies: <ul><li><strong>Not Found</strong></li></ul></p>"
 
         immz_rec = PatientImmunization.get_patientImmunization(smart)

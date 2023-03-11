@@ -30,7 +30,7 @@ class PatientObservation:
                self.issdate,
                self.bp['systolic'],
                self.bp['diastolic'],
-               self.bp['diastolicUnit'])          
+               self.bp['diastolicUnit'])
         else:
             return "{0} Date: {1}   Reading:{2} {3}".format(
                self.name,
@@ -77,7 +77,6 @@ class PatientObservation:
                                                 'category': cat,
                                                 'status': 'final'}).\
                 perform_resources(smart.server)
-
             resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
         except Exception as e:
             resources_ = None
