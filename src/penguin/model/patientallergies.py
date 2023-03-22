@@ -25,11 +25,11 @@ class PatientAllergies:
         verificationStatus = alz.verificationStatus
         type = alz.type
         category = alz.category
-        code = alz.code
+        code = alz.code.text if alz.code is not None else None
         criticality = alz.criticality
-        lastOccurrence = alz.lastOccurrence.isostring
-        onsetDateTime = alz.onsetDateTime
-        recordedDate = alz.recordedDate.isostring
+        lastOccurrence = alz.lastOccurrence.isostring if alz.lastOccurrence is not None else ""
+        onsetDateTime = alz.onsetDateTime.isostring if alz.onsetDateTime is not None else ""
+        recordedDate = alz.recordedDate.isostring if alz.recordedDate is not None else ""
         note = alz.note
         return cls(status=status,
                    verificationStatus=verificationStatus,
@@ -44,7 +44,7 @@ class PatientAllergies:
 
     def toString(self):
         return "Date: {0} code: {1}  status: {2} verification:{3} criticality:{4} notes: {5}".format(
-            self.lastOccurrence,
+            self.recordedDate,
             self.code,
             self.status,
             self.verificationStatus,
@@ -60,8 +60,7 @@ class PatientAllergies:
             resources = AllergyIntolerance.where(struct={'patient': smart.patient_id}).\
                 perform_resources(smart.server)
 
-            resources_ = [src for src in resources if src.resource_type != 'OperationOutcome' and
-                src.status == 'completed']
+            resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
         except Exception as e:
             resources_ = None
 

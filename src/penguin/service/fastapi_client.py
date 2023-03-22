@@ -223,8 +223,12 @@ def callback(request: Request, response_class=RedirectResponse):
         else:
             body += "<p>Vitals: <ul><li><strong>Not Found</strong></li></ul></p>"
 
-        alrgy_rec = PatientAllergies.get_patientAllergies(smart)
-        body += "<p>Allergies: <ul><li><strong>Not Found</strong></li></ul></p>"
+         alrgy_rec = PatientAllergies.get_patientAllergies(smart)
+        if alrgy_rec is not None:
+            body += "<p>Allergies: <ul><li>{0}</li></ul></p>".format('</li><li>'.
+            join([rec.toString() for rec in alrgy_rec]))
+        else:
+            body += "<p>Allergies: <ul><li><strong>Not Found</strong></li></ul></p>"
 
         immz_rec = PatientImmunization.get_patientImmunization(smart)
         if immz_rec is not None:
