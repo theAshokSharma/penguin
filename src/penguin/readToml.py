@@ -3,7 +3,7 @@ import pathlib
 
 import logging.config
 
-LOGGING_CONFIG = pathlib.Path(__file__).parent / "Logger_config.toml"
+LOGGING_CONFIG = pathlib.Path(__file__).parent / "logger_config.toml"
 
 with open(LOGGING_CONFIG, "rb") as f:
     data = tomllib.load(f)

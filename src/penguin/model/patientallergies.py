@@ -19,6 +19,7 @@ class PatientAllergies:
     recordedDate: date
     note: str
 # list of reactions
+
     @classmethod
     def fromFHIRAllergies(cls, alz: AllergyIntolerance):
         status = alz.clinicalStatus
