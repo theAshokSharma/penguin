@@ -1,52 +1,48 @@
-from datetime import date
+from datetime import date, datetime
 from dataclasses import dataclass
 
 from fhirclient.server import FHIRPermissionDeniedException
 from fhirclient.models.diagnosticreport import DiagnosticReport
+from fhirclient.models.fhirreference import FHIRReference
 
 # https://hl7.org/fhir/condition.html
 # https://patient-browser.smarthealthit.org/#/patient/2
 
 # INCOMPLETE - WORK IN PROGRESS
 
+
 @dataclass
 class PatientDiagnosticReport:
-    exception: bool
-    clinicalStatus: str
-    verificationStatus: str
-    severity: str
-    condition: str
-    onsetStart: date
-    onsetEnd: date
-    recordedDate: date
-    exceptionMessage: str
+    basedOn: str
+    status: str
+    category: str
+    result: str
+    effectiveDateTime: datetime
+    effectivePeriod: str
 
     @classmethod
     def fromFHIRCondition(cls, dr: DiagnosticReport):
-        return None
-        status = dr.clinicalStatus.text
-        verStatus = dr.verificationStatus.text if dr.verificationStatus is not None else ""
-        condition = dr.code.text if dr.code is not None else ""
-        recDate = dr.recordedDate.isostring if dr.recordedDate is not None else None
-        onsetStart = dr.onsetPeriod.start.isostring if dr.onsetPeriod is not None else None
-        onsetEnd = dr.onsetPeriod.end.isostring if dr.onsetPeriod is not None else None
-        severity = dr.severity
 
-        return cls(clinicalStatus=status,
-                   verificationStatus=verStatus,
-                   severity=severity,
-                   condition=condition,
-                   onsetStart=onsetStart,
-                   onsetEnd=onsetEnd,
-                   recordedDate=recDate)
+        ref: FHIRReference = dr.basedOn[0]
+        basedOn = ref.type if ref is not None else ""
+        status = dr.status
+        category = dr.category[0].text if dr.category is not None else ""
+        result = dr.result[0].display if dr.result is not None else ""
+        effectiveDateTime = dr.effectiveDateTime.isostring if dr.effectiveDateTime is not None else None
+        effectivePeriod = dr.effectivePeriod
+
+        return cls(status=status,
+                   basedOn=basedOn,
+                   category=category,
+                   result=result,
+                   effectiveDateTime=effectiveDateTime,
+                   effectivePeriod=effectivePeriod)
 
     def toString(self):
-        return None
-        return "Date:{0}  {1} Clinical Status: {2}  Verification Status:{3}".format(
-            self.recordedDate,
-            self.condition,
-            self.clinicalStatus,
-            self.verificationStatus)
+        return "Date:{0} result: {1}  Status:{2}".format(
+            self.effectiveDateTime,
+            self.result,
+            self.status)
 
     @staticmethod
     def _get_diagnostic_report(smart):
@@ -75,7 +71,8 @@ class PatientDiagnosticReport:
         patientdrpts = []
 
         for dr in drpts:
-            patientdrpt = PatientDiagnosticReport.fromFHIRCondition(dr)
-            patientdrpts.append(patientdrpt)
+            if dr.basedOn is not None:
+                patientdrpt = PatientDiagnosticReport.fromFHIRCondition(dr)
+                patientdrpts.append(patientdrpt)
 
         return patientdrpts

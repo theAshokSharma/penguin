@@ -37,9 +37,12 @@ class PatientPrescription:
         instructions = medreq.dosageInstruction[0].patientInstruction
         therapy_course = medreq.courseOfTherapyType.text if medreq.courseOfTherapyType is not None else None
         medication_reason = medreq.reasonCode[0].text if medreq.reasonCode is not None else None
-        supply_duration_value = dispense_req.expectedSupplyDuration.value
-        supply_duration_unit = dispense_req.expectedSupplyDuration.unit
-        repeats_allowed = dispense_req.numberOfRepeatsAllowed
+        supply_duration_value = dispense_req.expectedSupplyDuration.value\
+            if dispense_req.expectedSupplyDuration is not None else 0
+        supply_duration_unit = dispense_req.expectedSupplyDuration.unit\
+            if dispense_req.expectedSupplyDuration is not None else ''
+        repeats_allowed = dispense_req.numberOfRepeatsAllowed\
+            if dispense_req.numberOfRepeatsAllowed is not None else ''
 
         if dispense_req.validityPeriod is not None:
             validity_start = dispense_req.validityPeriod.start.isostring\

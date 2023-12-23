@@ -35,11 +35,39 @@ REQ: Request = None
 #     - `launch_token`: The launch token
 #     - `jwt_token`:
 
+smart_scope = 'patient/Patient.read'
+smart_scope += ' patient/Observation.read'
+smart_scope += ' patient/Immunization.read'
+smart_scope += ' patient/Medication.read'
+smart_scope += ' patient/MedicationRequest.read'
+smart_scope += ' patient/AllergyIntolerance.read'
+smart_scope += ' patient/DiagnosticReport.read'
+smart_scope += ' patient/Procedure.read'
+smart_scope += ' patient/Condition.read'
+smart_scope += ' launch/patient fhirUser online_access openid profile'
+
+# smart_defaults = {
+#     'app_id': os.environ.get("ATHENA_CLIENT_ID"),
+#     'api_base': os.environ.get('ATHENA_API_BASE'),
+#     'redirect_uri': os.environ.get('APP_REDIRECT_URL'),
+#     'scope': smart_scope,
+#     'code_challenge': 'test',
+#     'launch_token': ''
+# }
+
+# smart_defaults = {
+#     'app_id': os.environ.get("EPIC_CLIENT_ID"),
+#     'api_base': os.environ.get('EPIC_API_BASE'),
+#     'redirect_uri': os.environ.get('APP_REDIRECT_URL'),
+#     'scope': smart_scope,
+#     'launch_token': ''
+# }
+
 smart_defaults = {
-    'app_id': os.environ.get("EPIC_CLIENT_ID"),
-    'api_base': os.environ.get('EPIC_API_BASE'),
+    'app_id': os.environ.get("CERNER_CLIENT_ID"),
+    'api_base': os.environ.get('CERNER_API_BASE'),
     'redirect_uri': os.environ.get('APP_REDIRECT_URL'),
-    'scope': 'patient/Patient.read patient/Observation.read launch/patient online_access openid profile',
+    'scope': smart_scope,
     'launch_token': ''
 }
 
@@ -50,6 +78,11 @@ def _save_state(state):
 
 def _get_smart():
     state = REQ.session.get('state')
+
+    if state:
+        if state["app_id"] != smart_defaults["app_id"]:
+            _reset()
+            state = None
 
     if state:
         return client.FHIRClient(state=state,
@@ -70,20 +103,6 @@ def _reset():
         del REQ.session['state']
 
 
-# def _get_prescriptions(smart):
-
-#     try:
-#         bundle = MedicationRequest.where({'patient': smart.patient_id}).perform(smart.server)
-#         pres = [be.resource for be in bundle.entry] if bundle is not None and \
-#             bundle.entry is not None else None
-#     except Exception as e:
-#         pres = None
-
-#     if pres is not None and len(pres) > 0:
-#         return pres
-#     return None
-
-
 def _get_allergies(smart):
     try:
         resources = AllergyIntolerance.where(struct={'patient': smart.patient_id}).\
@@ -94,36 +113,6 @@ def _get_allergies(smart):
         resources_ = None
 
     return resources_
-
-
-# def _get_medication_by_ref(ref, smart):
-#     med_id = ref.split("/")[1]
-#     return Medication.read(med_id, smart.server).code
-
-
-# def _med_name(med):
-#     if med.coding:
-#         name = next((coding.display for coding in med.coding
-#                      if coding.system == 'http://www.nlm.nih.gov/research/umls/rxnorm'), None)
-#         if name:
-#             return name
-#     if med.text:
-#         return med.text
-#     return "Unnamed Medication(TM)"
-
-
-# def _get_med_name(prescription, client=None):
-#     if prescription.resource_type == 'MedicationRequest':
-#         if prescription.medicationCodeableConcept is not None:
-#             med = prescription.medicationCodeableConcept
-#             return _med_name(med)
-#         elif prescription.medicationReference is not None and client is not None:
-#             med = _get_medication_by_ref(prescription.medicationReference.reference, client)
-#             return _med_name(med)
-#         else:
-#             return 'Error: medication not found'
-#     else:
-#         return ""  # "unmanaged resource type: {0}".format(prescription.resource_type)
 
 
 app = FastAPI()
@@ -168,15 +157,14 @@ def callback(request: Request, response_class=RedirectResponse):
     try:
         smart.handle_callback(request.url._url)
     except Exception as e:
-        return HTMLResponse("""<h1>Authorization Error</h1><p>{0}</p><p><a href="/">Start over</a></p>""".
+        return HTMLResponse("""<h1>Authorization Error:</h1><p>{0}</p><p><a href="/">Start over</a></p>""".
         format(e))
 
-    body = "<h1>Hello</h1>"
+    body = """<p><a href="/logout">Change patient</a></p>"""
+    body += "<h1>Hello</h1>"
     if smart.ready and smart.patient is not None:
 
         pat = PatientInfo.fromFHIRPatient(smart.patient)
-
-        diagnostic_rpts = PatientDiagnosticReport.get_patient_diagnostic_report(smart)
 
         # generate simple body text
         body += "<p>Patient <em>{0}</em>.</p>".format(pat.full_name())
@@ -216,6 +204,13 @@ def callback(request: Request, response_class=RedirectResponse):
         else:
             body += "<p>Conditions: <ul><li><strong>Not Found</strong></li></ul></p>"
 
+        diagnostic_recs = PatientDiagnosticReport.get_patient_diagnostic_report(smart)
+        if diagnostic_recs is not None:
+            body += "<p>Diagnostic: <ul><li>{0}</li></ul></p>".format('</li><li>'.
+            join([rec.toString() for rec in diagnostic_recs]))
+        else:
+            body += "<p>Diagnostic: <ul><li><strong>Not Found</strong></li></ul></p>"
+
         obs_vs = PatientObservation.get_patient_vital_signs(smart)
         if obs_vs is not None:
             body += "<p>Vitals: <ul><li>{0}</li></ul></p>".format('</li><li>'.
@@ -253,7 +248,6 @@ def callback(request: Request, response_class=RedirectResponse):
 
         body += "<p>Procedures: <ul><li><strong>Not Found</strong></li></ul></p>"
 
-        body += """<p><a href="/logout">Change patient</a></p>"""
     return HTMLResponse(body)
 
 
@@ -267,7 +261,7 @@ def login_get():
 
 @app.get('/reset', response_class=HTMLResponse)
 def reset():
-    _logout()
+    _logout() 
     _reset()
     response = RedirectResponse(url="/")
     return response
