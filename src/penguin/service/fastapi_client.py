@@ -44,18 +44,20 @@ smart_scope += ' patient/AllergyIntolerance.read'
 smart_scope += ' patient/DiagnosticReport.read'
 smart_scope += ' patient/Procedure.read'
 smart_scope += ' patient/Condition.read'
-smart_scope += ' launch/patient fhirUser online_access openid profile'
+smart_scope += ' launch/patient fhirUser openid profile'
 
 # smart_defaults = {
+#     'grant_type': 'authorization_code',
 #     'app_id': os.environ.get("ATHENA_CLIENT_ID"),
+#     # 'app_secret': os.getenv("ATHENA_CLIENT_SECRET"),
 #     'api_base': os.environ.get('ATHENA_API_BASE'),
 #     'redirect_uri': os.environ.get('APP_REDIRECT_URL'),
 #     'scope': smart_scope,
-#     'code_challenge': 'test',
 #     'launch_token': ''
 # }
 
 # smart_defaults = {
+#     'grant_type': 'authorization_code',
 #     'app_id': os.environ.get("EPIC_CLIENT_ID"),
 #     'api_base': os.environ.get('EPIC_API_BASE'),
 #     'redirect_uri': os.environ.get('APP_REDIRECT_URL'),
@@ -64,9 +66,11 @@ smart_scope += ' launch/patient fhirUser online_access openid profile'
 # }
 
 smart_defaults = {
-    'app_id': os.environ.get("CERNER_CLIENT_ID"),
-    'api_base': os.environ.get('CERNER_API_BASE'),
-    'redirect_uri': os.environ.get('APP_REDIRECT_URL'),
+    'grant_type': 'client_credentials',
+    'app_id': os.getenv("CERNER_CLIENT_ID"),
+    'api_base': os.getenv('CERNER_API_BASE'),
+    'redirect_uri': os.getenv('APP_REDIRECT_URL'),
+    # 'app_secret': os.getenv("CERNER_CLIENT_SECRET"),
     'scope': smart_scope,
     'launch_token': ''
 }
@@ -110,6 +114,7 @@ def _get_allergies(smart):
 
         resources_ = [src for src in resources if src.resource_type != 'OperationOutcome']
     except Exception as e:
+        print(e)
         resources_ = None
 
     return resources_
@@ -261,12 +266,12 @@ def login_get():
 
 @app.get('/reset', response_class=HTMLResponse)
 def reset():
-    _logout() 
+    _logout()
     _reset()
     response = RedirectResponse(url="/")
     return response
 
-
+ 
 if __name__ == '__main__':
     uvicorn.run("fastapi_client:app",
                 host='localhost',

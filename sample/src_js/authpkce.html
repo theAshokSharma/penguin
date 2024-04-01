@@ -3,13 +3,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
 <script>
+smart_scope = 'patient/Patient.read'
+smart_scope += ' patient/Observation.read'
+smart_scope += ' patient/Immunization.read'
+smart_scope += ' patient/Medication.read'
+smart_scope += ' patient/MedicationRequest.read'
+smart_scope += ' patient/AllergyIntolerance.read'
+smart_scope += ' patient/DiagnosticReport.read'
+smart_scope += ' patient/Procedure.read'
+smart_scope += ' patient/Condition.read'
+smart_scope += ' launch/patient fhirUser offline_access openid profile'
 // Configure your application and authorization server details
 var config = {
-    client_id: "a276192d-1e62-4e11-9ff8-a76728fee870",
-    redirect_uri: "http://localhost:8080",
-    authorization_endpoint: "https://fhir.epic.com/interconnect-fhir-oauth/oauth2/authorize",
-    token_endpoint: "https://fhir.epic.com/interconnect-fhir-oauth/oauth2/token",
-    requested_scopes: "patient/*.*"
+    aud: "https://api.preview.platform.athenahealth.com/fhir/r4/",
+    client_id: "0oalebkl44XjMbHkB297",
+    redirect_uri: "http://localhost:3000",
+    authorization_endpoint: "https://api.preview.platform.athenahealth.com/oauth2/v1/authorize",
+    token_endpoint: "https://api.preview.platform.athenahealth.com/oauth2/v1/token",
+    requested_scopes: smart_scope
 };
 </script>
 

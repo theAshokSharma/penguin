@@ -37,3 +37,47 @@ class Encryptor():
 
         with open(decrypted_file, 'wb') as file:
             file.write(decrypted)
+
+    def encrypt(self, key, textdata: str):
+        f = Fernet(key)
+        encrypt_data = f.encrypt(textdata)
+        return encrypt_data
+
+    def decrypt(self, key, encrypt_data: str):
+        f = Fernet(key)
+        textdata = f.decrypt(encrypt_data)
+        return textdata
+
+
+def unlock():
+    enc = Encryptor()
+
+    key = enc.key_load("penguin_lock")
+    enc.file_decrypt(key,
+                     "src/penguin/utility/xyz.pdf.locked"
+                     "src/penguin/utility/xyz.pdf")
+
+
+def lock():
+    enc = Encryptor()
+
+    key = enc.key_load("penguin_lock")
+    enc.file_encrypt(key,
+                     "src/penguin/utility/xyz.pdf"
+                     "src/penguin/utility/xyz.pdf.locked")
+
+
+def create_key():
+    enc = Encryptor()
+    key = enc.key_create()
+    enc.key_write(key, "penguin_lock")
+
+
+if __name__ == "__main__":
+
+    enc = Encryptor()
+    key = enc.key_load("penguin_lock")
+    edata = enc.encrypt(key,
+                         "Ashok Sharma")
+    print(edata)
+

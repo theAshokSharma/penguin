@@ -134,3 +134,4 @@ dmypy.json
 *.xlsx
 data/*.*
 session_data/*
+penguin_lock

@@ -25,6 +25,7 @@ def get_pkce() -> Tuple[str, str, str]:
 
     return code_verifier, code_challenge, "S256"
 
+
 def get_auth_response(auth_url: str, hint_redirect_uri) -> str:
     authorization_response = None
 
@@ -45,6 +46,7 @@ def get_auth_response(auth_url: str, hint_redirect_uri) -> str:
 
     return authorization_response
 
+
 def _get_auth_code(response: str, state: Optional[str]=None) -> str:
     parsed = urlparse(response)
     params = parse_qs(parsed.query)
@@ -54,6 +56,7 @@ def _get_auth_code(response: str, state: Optional[str]=None) -> str:
             raise Exception("Find some more suitable exception next time")
 
     return params['code'][0]
+
 
 def get_ident_code_grant():
     """
@@ -95,6 +98,7 @@ def get_ident_code_grant():
                                         redirect_uri=redirect_uri)
     return token
 
+
 def download_blob(token):
     container_client = ContainerClient(account_url="https://{}.blob.core.windows.net".format(STORAGE_NAME),
                                        container_name="test",
@@ -104,6 +108,7 @@ def download_blob(token):
     with open("./BlockDestination.txt", "wb") as my_blob:
         blob_data = blob_client.download_blob()
         blob_data.readinto(my_blob)
+
 
 if __name__ == "__main__":
     token = get_ident_code_grant()

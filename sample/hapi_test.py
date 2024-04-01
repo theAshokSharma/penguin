@@ -23,6 +23,7 @@ patient = p.Patient.read("53373", smart.server)
 print(patient.birthDate.isostring)
 print(smart.human_name(patient.name[0]))
 
+
 search = im.Immunization.where(struct={'patient': '53373'})
 immunizations = search.perform_resources(smart.server)
 for imm in immunizations:
