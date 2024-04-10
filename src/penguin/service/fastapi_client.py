@@ -66,7 +66,7 @@ smart_scope += ' launch/patient fhirUser openid profile'
 # }
 
 smart_defaults = {
-    'grant_type': 'client_credentials',
+    'grant_type': 'authorization_code',
     'app_id': os.getenv("CERNER_CLIENT_ID"),
     'api_base': os.getenv('CERNER_API_BASE'),
     'redirect_uri': os.getenv('APP_REDIRECT_URL'),
